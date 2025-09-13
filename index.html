@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru"> 
+<head> 
+    <meta charset="UTF-8" /> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+    <title>Интерактивные калькуляторы | Антон Рясов</title> 
+    <meta name="description" content="Онлайн-калькулятор ROMI, LTV, CAC и конверсии. Рассчитайте ключевые метрики вашего маркетинга и бизнеса в реальном времени с наглядной визуализацией."> 
+    <meta name="author" content="Антон Рясов"> 
+    <meta name="theme-color" content="#030305" />
+
+    <!-- Иконки -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Шрифты -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+
+<!-- Библиотеки (defer сохраняет порядок выполнения) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.42/bundled/lenis.min.js" defer></script>
+
+<noscript>
+    <style>
+        .preloader { display: none; }
+        body { overflow: auto; }
+    </style>
+</noscript>
+
+<style>
+    /* === Глобальные переменные и базовые стили === */
+    :root {
+        --bg-color: #030305;
+        --primary-accent: #8A2BE2; /* Фиолетовый */
+        --secondary-accent: #00F2FE; /* Бирюзовый */
+        --tertiary-accent: #FF00A8; /* Розовый */
+        --accent-orange: #FF7700;
+        --accent-orange-rgb: 255, 119, 0;
+        --glass-bg: rgba(18, 18, 28, 0.5);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-primary: #ECECF1;
+        --text-secondary: #A0AEC0;
+        --neon: rgba(138, 43, 226, 0.85);
+        --neon-soft: rgba(138, 43, 226, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+    background:
+        radial-gradient(70rem 50rem at 20% 10%, rgba(24, 18, 40, 0.22) 0%, rgba(24, 18, 40, 0) 60%),
+        radial-gradient(65rem 50rem at 80% 90%, rgba(12, 32, 44, 0.18) 0%, rgba(12, 32, 44, 0) 60%),
+        radial-gradient(60rem 45rem at 50% 95%, rgba(44, 12, 32, 0.16) 0%, rgba(44, 12, 32, 0) 60%),
+        linear-gradient(180deg, #050508 0%, #07070c 45%, #040407 100%);
+    background-attachment: fixed;
+    background-color: var(--bg-color);
+}
+
+    body {
+        font-family: 'Inter', sans-serif;
+        color: var(--text-primary);
+        background-color: transparent;
+        line-height: 1.6;
+        overflow: hidden;
+        cursor: default;
+    }
+    
+    /* === Фон === */
+    .background-effects { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+    .aurora-background { position: absolute; inset: -5%; background: radial-gradient(circle at 22% 26%, rgba(138, 43, 226, 0.6) 0%, transparent 60%), radial-gradient(circle at 74% 35%, rgba(0, 242, 254, 0.7) 0%, transparent 60%), radial-gradient(circle at 56% 82%, rgba(255, 0, 168, 0.6) 0%, transparent 60%); filter: blur(80px); animation: aurora-move 22s infinite alternate; }
+    @keyframes aurora-move { to { transform: scale(1.1) translateY(-2%); } }
+    
+    /* === Общие компоненты === */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+    .section { padding: 140px 0; }
+    .section-header { text-align: center; margin-bottom: 80px; }
+    .tagline { color: var(--primary-accent); font-weight: 600; margin-bottom: 15px; display: block; }
+    .section-title { font-size: clamp(3rem, 7vw, 5.5rem); font-weight: 800; line-height: 1.1; color: var(--text-primary); }
+    .highlight { background: linear-gradient(90deg, var(--primary-accent), var(--tertiary-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .button { display: inline-flex; align-items: center; gap: 10px; padding: 16px 28px; background: transparent; border: 1px solid var(--border-color); border-radius: 50px; color: var(--text-primary); text-decoration: none; font-weight: 600; position: relative; overflow: hidden; backdrop-filter: blur(10px); z-index: 1; }
+    
+    /* === Эффект оранжевого свечения === */
+    .glow-on-hover-orange { transition: color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease; }
+    .glow-on-hover-orange::before { content: ''; position: absolute; top: 50%; left: 50%; width: 200%; padding-top: 200%; border-radius: 50%; background: radial-gradient(circle, rgba(var(--accent-orange-rgb), 0.3) 0%, rgba(var(--accent-orange-rgb), 0) 70%); transform: translate(-50%, -50%) scale(0); opacity: 0; transition: transform 0.6s ease, opacity 0.6s ease; z-index: -1; }
+    .glow-on-hover-orange:hover { border-color: var(--accent-orange); color: white; box-shadow: 0 0 15px rgba(var(--accent-orange-rgb), 0.5), 0 0 30px rgba(var(--accent-orange-rgb), 0.2); transform: translateY(-2px); }
+    .glow-on-hover-orange:hover::before { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+    /* === Навигация === */
+    .navbar { position: fixed; top: 0; left: 0; width: 100%; padding: 30px 0; z-index: 1000; transition: transform 0.5s ease, background 0.3s ease; background: linear-gradient(to bottom, rgba(3,3,5,0.65), rgba(3,3,5,0)); backdrop-filter: saturate(120%) blur(6px); }
+    .navbar.hidden { transform: translateY(-100%); }
+    .navbar .container { display: flex; justify-content: space-between; align-items: center; }
+    .nav-logo { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); text-decoration: none; }
+    .nav-links { display: flex; gap: 10px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-weight: 500; padding: 8px 16px; border: 1px solid transparent; border-radius: 50px; }
+    
+    /* === Hero === */
+    .hero-section { min-height: 80vh; display: flex; align-items: center; text-align: center; }
+    .hero-content .section-title { font-size: clamp(3rem, 10vw, 6.5rem); }
+    .hero-content .hero-subtitle { font-size: clamp(1.1rem, 3vw, 1.4rem); color: var(--text-secondary); max-width: 800px; margin: 30px auto 0; }
+
+    /* === Калькулятор === */
+    .calculator-container { padding: 40px; border: 1px solid var(--border-color); border-radius: 24px; background: rgba(10, 10, 15, 0.4); backdrop-filter: blur(15px); }
+    .calc-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 40px; flex-wrap: wrap; }
+    .calc-tab-btn { padding: 10px 24px; background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 500; border-radius: 50px; cursor: pointer; transition: all 0.25s ease; }
+    .calc-tab-btn:hover { color: var(--text-primary); border-color: var(--primary-accent); background-color: rgba(138,43,226,0.1); }
+    .calc-tab-btn.active { color: var(--text-primary); background-color: var(--primary-accent); border-color: var(--primary-accent); box-shadow: 0 0 15px rgba(138,43,226,0.5); }
+    .calc-content { display: none; } .calc-content.active { display: block; }
+    .calculator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    .input-group { margin-bottom: 25px; } .input-group label { display: block; margin-bottom: 10px; color: var(--text-secondary); }
+    .input-row { display: flex; align-items: center; gap: 15px; }
+    .input-row input[type="range"] { flex-grow: 1; -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border-color); outline: none; border-radius: 5px; }
+    .input-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--secondary-accent); border-radius: 50%; cursor: pointer; }
+    .input-row input[type="number"] { width: 120px; padding: 8px 12px; background: var(--glass-bg); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px; font-size: 1rem; }
+    
+    .results-visuals { display: flex; justify-content: center; align-items: center; min-height: 250px; }
+    .result-display { text-align: center; } .result-display .value { font-size: 4rem; font-weight: 700; line-height: 1.1; } .result-display .label { color: var(--text-secondary); }
+    .result-interpretation { margin-top: 15px; font-style: italic; color: var(--text-secondary); }
+
+    /* Визуализации */
+    .romi-gauge { width: 250px; height: 125px; position: relative; overflow: hidden; }
+    .romi-gauge .gauge-bg { width: 100%; height: 100%; border-radius: 250px 250px 0 0; background: conic-gradient(from -90deg, #ff4d4d, #ffd700, #4caf50); }
+    .romi-gauge .gauge-cover { position: absolute; bottom: 0; left: 5%; width: 90%; height: 90%; background: #0a0a0f; border-radius: 200px 200px 0 0; }
+    .romi-gauge .gauge-needle { position: absolute; bottom: 0; left: 50%; width: 2px; height: 100px; background: var(--text-primary); transform-origin: bottom center; transition: transform 0.5s ease-out; transform: translateX(-50%) rotate(var(--romi-rotation, -90deg)); }
+    
+    .ltv-cac-chart { display: flex; gap: 30px; align-items: flex-end; height: 200px; }
+    .chart-bar { width: 80px; text-align: center; }
+    .chart-bar .bar { background-color: var(--secondary-accent); border-radius: 8px 8px 0 0; transition: height 0.5s ease-out; }
+    .chart-bar .bar.cac { background-color: var(--tertiary-accent); }
+    .chart-bar .label { margin-top: 10px; font-weight: 500; }
+
+    .conversion-circle { width: 180px; height: 180px; border-radius: 50%; background: conic-gradient(var(--secondary-accent) calc(var(--conv-percent, 0) * 1%), var(--border-color) 0); display: flex; justify-content: center; align-items: center; transition: background 0.5s ease-out; }
+    .conversion-circle .inner-circle { width: 150px; height: 150px; background: #0a0a0f; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-align: center; }
+
+    /* === Блок "Почему это важно" === */
+    .importance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+    .importance-card { padding: 30px; border: 1px solid var(--border-color); border-radius: 16px; }
+    .importance-card .icon { font-size: 2rem; color: var(--primary-accent); margin-bottom: 20px; }
+    .importance-card h3 { font-size: 1.5rem; margin-bottom: 15px; }
+    .importance-card p { color: var(--text-secondary); }
+
+    /* === Промо-блоки === */
+    .promo-section { padding: 100px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); text-align: center; }
+    .promo-card { max-width: 700px; margin: 0 auto; }
+    .promo-card .icon { font-size: 3rem; margin-bottom: 20px; background: linear-gradient(90deg, var(--primary-accent), var(--secondary-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .promo-card h2 { font-size: 2.5rem; margin-bottom: 20px; }
+    .promo-card p { color: var(--text-secondary); margin-bottom: 30px; }
+
+    /* === Адаптивность === */
+    @media (max-width: 900px) {
+        .calculator-grid { grid-template-columns: 1fr; }
+        .results-visuals { margin-top: 40px; }
+    }
+    @media (max-width: 768px) {
+        .section { padding: 100px 0; }
+        .container { padding: 0 20px; }
+    }
+</style>
+</head> 
+<body>
+    <!-- Прелоадер -->
+    <div class="preloader" aria-hidden="true">
+        <div class="preloader-sphere-container">
+            <div class="preloader-sphere">
+                <div class="preloader-sphere-glow"></div>
+            </div>
+            <p class="preloader-text">Загружаю...</p>
+        </div>
+    </div>
+
+<!-- Фон -->
+<div class="background-effects" aria-hidden="true">
+    <div class="aurora-background"></div>
+</div>
+
+<!-- Навигация -->
+<header class="navbar" role="navigation">
+    <div class="container">
+        <a href="#" class="nav-logo">AR.</a>
+        <nav class="nav-links">
+            <a href="https://ryasov777.github.io/portfolio2/" target="_blank" rel="noopener" class="button glow-on-hover-orange" style="padding: 8px 16px;">Портфолио</a>
+            <a href="https://ryasov777.github.io/services/" target="_blank" rel="noopener" class="button glow-on-hover-orange" style="padding: 8px 16px;">Услуги</a>
+        </nav>
+    </div>
+</header>
+
+<!-- Контент -->
+<div id="smooth-wrapper">
+    <div id="smooth-content">
+        <main>
+            <!-- ГЛАВНЫЙ ЭКРАН -->
+            <section class="hero-section">
+                <div class="container">
+                    <div class="hero-content">
+                        <h1 class="section-title">Рассчитайте<br>будущее вашего<span class="highlight"> маркетинга</span></h1>
+                        <p class="hero-subtitle">Интерактивные калькуляторы для мгновенной оценки ключевых бизнес-метрик. Передвигайте ползунки и смотрите, как меняются ваши показатели в реальном времени.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- КАЛЬКУЛЯТОР -->
+            <section id="calculator" class="section" style="padding-top: 0;">
+                <div class="container">
+                    <div class="calculator-container">
+                        <div class="calc-tabs">
+                            <button class="calc-tab-btn active" data-tab="romi-calc">ROMI</button>
+                            <button class="calc-tab-btn" data-tab="ltv-calc">LTV & CAC</button>
+                            <button class="calc-tab-btn" data-tab="conv-calc">Conversion Rate</button>
+                        </div>
+                        
+                        <!-- ROMI Calculator -->
+                        <div id="romi-calc" class="calc-content active">
+                            <div class="calculator-grid">
+                                <div class="inputs">
+                                    <div class="input-group">
+                                        <label for="romi-revenue">Доход от маркетинга</label>
+                                        <div class="input-row">
+                                            <input type="range" id="romi-revenue-slider" min="0" max="5000000" step="10000" value="1500000">
+                                            <input type="number" id="romi-revenue-number" min="0" step="10000" value="1500000">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="romi-cost">Расходы на маркетинг</label>
+                                        <div class="input-row">
+                                            <input type="range" id="romi-cost-slider" min="0" max="1000000" step="5000" value="300000">
+                                            <input type="number" id="romi-cost-number" min="0" step="5000" value="300000">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="results-visuals">
+                                    <div class="romi-gauge">
+                                        <div class="gauge-bg"></div>
+                                        <div class="gauge-cover"></div>
+                                        <div class="gauge-needle"></div>
+                                        <div class="result-display" style="position: absolute; bottom: 10px; width: 100%;">
+                                            <div class="value" id="romi-result">400%</div>
+                                            <div class="label">ROMI</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-interpretation" id="romi-interpretation">Отличный результат! Каждый вложенный рубль приносит 4 рубля прибыли.</div>
+                        </div>
+
+                        <!-- LTV & CAC Calculator -->
+                        <div id="ltv-calc" class="calc-content">
+                             <div class="calculator-grid">
+                                <div class="inputs">
+                                    <div class="input-group">
+                                        <label>Средний чек</label>
+                                        <div class="input-row">
+                                            <input type="range" class="ltv-input" id="ltv-avg-check-slider" min="100" max="50000" step="100" value="5000">
+                                            <input type="number" class="ltv-input" id="ltv-avg-check-number" min="100" step="100" value="5000">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Число повторных покупок (в год)</label>
+                                        <div class="input-row">
+                                            <input type="range" class="ltv-input" id="ltv-repeats-slider" min="0" max="24" step="1" value="4">
+                                            <input type="number" class="ltv-input" id="ltv-repeats-number" min="0" step="1" value="4">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Время жизни клиента (лет)</label>
+                                        <div class="input-row">
+                                            <input type="range" class="ltv-input" id="ltv-lifespan-slider" min="0.5" max="10" step="0.5" value="3">
+                                            <input type="number" class="ltv-input" id="ltv-lifespan-number" min="0.5" step="0.5" value="3">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Стоимость привлечения (CAC)</label>
+                                        <div class="input-row">
+                                            <input type="range" class="ltv-input" id="ltv-cac-slider" min="100" max="50000" step="100" value="8000">
+                                            <input type="number" class="ltv-input" id="ltv-cac-number" min="100" step="100" value="8000">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="results-visuals">
+                                    <div class="ltv-cac-chart">
+                                        <div class="chart-bar"><div class="bar" id="ltv-bar" style="height: 100%;"></div><div class="label" id="ltv-result">60 000 ₽</div><div class="label" style="color: var(--text-secondary)">LTV</div></div>
+                                        <div class="chart-bar"><div class="bar cac" id="cac-bar" style="height: 20%;"></div><div class="label" id="cac-result">8 000 ₽</div><div class="label" style="color: var(--text-secondary)">CAC</div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-interpretation" id="ltv-interpretation">Бизнес-модель здорова! LTV значительно превышает CAC.</div>
+                        </div>
+
+                        <!-- Conversion Rate Calculator -->
+                        <div id="conv-calc" class="calc-content">
+                            <div class="calculator-grid">
+                                <div class="inputs">
+                                    <div class="input-group">
+                                        <label>Количество посетителей / лидов</label>
+                                        <div class="input-row">
+                                            <input type="range" class="conv-input" id="conv-visitors-slider" min="10" max="10000" step="10" value="1500">
+                                            <input type="number" class="conv-input" id="conv-visitors-number" min="10" step="10" value="1500">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Количество конверсий (покупок, заявок)</label>
+                                        <div class="input-row">
+                                            <input type="range" class="conv-input" id="conv-actions-slider" min="0" max="1000" step="1" value="75">
+                                            <input type="number" class="conv-input" id="conv-actions-number" min="0" step="1" value="75">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="results-visuals">
+                                    <div class="conversion-circle" id="conv-circle">
+                                        <div class="inner-circle">
+                                            <div class="result-display">
+                                                <div class="value" id="conv-result">5.0%</div>
+                                                <div class="label">Конверсия</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-interpretation" id="conv-interpretation">Каждый 20-й посетитель совершает целевое действие.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Почему это важно -->
+            <section class="section">
+                <div class="container">
+                    <div class="section-header">
+                        <span class="tagline">Экспертиза</span>
+                        <h2 class="section-title">Не просто цифры — это решения</h2>
+                    </div>
+                    <div class="importance-grid">
+                        <div class="importance-card">
+                            <div class="icon"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+                            <h3>ROMI</h3>
+                            <p>Показывает окупаемость ваших вложений в маркетинг. Высокий ROMI говорит об эффективности каналов и креативов.</p>
+                        </div>
+                        <div class="importance-card">
+                            <div class="icon"><i class="fa-solid fa-users"></i></div>
+                            <h3>LTV & CAC</h3>
+                            <p>Ключевое соотношение для оценки здоровья бизнес-модели. LTV должен быть значительно выше CAC для устойчивого роста.</p>
+                        </div>
+                        <div class="importance-card">
+                            <div class="icon"><i class="fa-solid fa-bullseye"></i></div>
+                            <h3>Conversion Rate</h3>
+                            <p>Отражает, насколько эффективно ваш сайт или воронка продаж превращает посетителей в клиентов. Ключ к масштабированию.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Промо-блок: Портфолио -->
+            <section class="promo-section">
+                <div class="container">
+                    <div class="promo-card">
+                        <div class="icon"><i class="fa-solid fa-layer-group"></i></div>
+                        <h2>Посмотрите мои работы</h2>
+                        <p>Цифры важны, но результат лучше всего виден в реальных проектах. Ознакомьтесь с моими кейсами, чтобы увидеть, как data-driven подход решает бизнес-задачи.</p>
+                        <a href="https://ryasov777.github.io/portfolio2/" target="_blank" rel="noopener" class="button glow-on-hover-orange">Перейти в портфолио</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Промо-блок: Услуги -->
+            <section class="promo-section" style="background: rgba(255,255,255,0.01);">
+                <div class="container">
+                    <div class="promo-card">
+                        <div class="icon"><i class="fa-solid fa-list-check"></i></div>
+                        <h2>Готовые решения для вашего бизнеса</h2>
+                        <p>От разовых консультаций и аудитов до комплексного маркетингового сопровождения. Найдите услугу, которая нужна вам прямо сейчас.</p>
+                        <a href="https://ryasov777.github.io/services/" target="_blank" rel="noopener" class="button glow-on-hover-orange">Смотреть услуги и цены</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Промо-блок: Телеграм-канал -->
+            <section class="promo-section">
+                <div class="container">
+                    <div class="promo-card">
+                        <div class="icon"><i class="fa-brands fa-telegram"></i></div>
+                        <h2>Больше инсайтов в The Marketing Suite</h2>
+                        <p>Подписывайтесь на мой авторский канал, где я делюсь практическими гайдами, шаблонами и разбираю реальные кейсы из мира маркетинга и аналитики.</p>
+                        <a href="https://t.me/tms_ryasov" target="_blank" rel="noopener" class="button glow-on-hover-orange">Подписаться</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ФУТЕР -->
+        <footer class="footer" style="padding: 60px 0; border-top: 1px solid var(--border-color);">
+            <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div class="footer-logo">Антон Рясов © 2024</div>
+                <div class="footer-links" style="display: flex; gap: 30px;">
+                    <a href="mailto:anton.ryasov@outlook.com">Email</a>
+                    <a href="https://t.me/ryasov" target="_blank" rel="noopener">Telegram</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- Скрипты страницы -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ... остальной код ...
+    const onWindowLoad = () => {
+        const preloader = document.querySelector('.preloader');
+        const preloaderSphere = document.querySelector('.preloader-sphere-container');
+        if (window.gsap && preloader && preloaderSphere) {
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    preloader.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    initPage();
+                }
+            });
+            tl.to(preloaderSphere, { scale: 0, opacity: 0, duration: 0.8, ease: 'power3.in', delay: 0.5 })
+              .to(preloader, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.5');
+        } else {
+            if (preloader) preloader.remove();
+            document.body.style.overflow = 'auto';
+            initPage();
+        }
+    };
+    if (document.readyState === 'complete') onWindowLoad();
+    else window.addEventListener('load', onWindowLoad);
+});
+
+function initPage() {
+    let lenis = null;
+    if (window.Lenis) {
+        lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+        if (window.gsap) gsap.ticker.add((time) => lenis.raf(time * 1000));
+        else { function raf(time) { lenis.raf(time); requestAnimationFrame(raf); } requestAnimationFrame(raf); }
+    } else document.documentElement.style.scrollBehavior = 'smooth';
+    
+    initCalculators();
+    initCalculatorTabs();
+    
+    if (window.gsap && window.ScrollTrigger) {
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('#smooth-wrapper', { opacity: 0, duration: 1.2, ease: 'power3.out' });
+        gsap.utils.toArray('.section-header, .principle-card, .calculator-container, .importance-card, .promo-card').forEach(el => {
+            gsap.from(el, {
+                opacity: 0, y: 50, duration: 1, ease: 'power3.out',
+                scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+            });
+        });
+    }
+    
+    const navbar = document.querySelector('.navbar');
+    let lastScrollY = window.scrollY;
+    const handleScrollDir = y => {
+        if (y > 100 && y > lastScrollY) navbar.classList.add('hidden');
+        else navbar.classList.remove('hidden');
+        lastScrollY = y;
+    };
+    if (lenis) lenis.on('scroll', e => handleScrollDir(e.scroll));
+    else window.addEventListener('scroll', () => handleScrollDir(window.scrollY), { passive: true });
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', e => {
+            const href = anchor.getAttribute('href');
+            const target = document.querySelector(href);
+            if (!target) return;
+            e.preventDefault();
+            if (lenis) lenis.scrollTo(target, { offset: -100, duration: 1.5 });
+            else target.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+}
+
+function initCalculatorTabs() {
+    const tabContainer = document.querySelector('.calc-tabs');
+    if (!tabContainer) return;
+    tabContainer.addEventListener('click', (e) => {
+        if (!e.target.matches('.calc-tab-btn')) return;
+        
+        tabContainer.querySelector('.active').classList.remove('active');
+        e.target.classList.add('active');
+        
+        const activeContent = document.querySelector('.calc-content.active');
+        const newContent = document.getElementById(e.target.dataset.tab);
+        
+        gsap.timeline()
+            .to(activeContent, { opacity: 0, duration: 0.2, onComplete: () => activeContent.classList.remove('active') })
+            .call(() => newContent.classList.add('active'))
+            .fromTo(newContent, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3 });
+    });
+}
+
+function initCalculators() {
+    const formatNumber = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num));
+
+    // --- ROMI Calculator ---
+    const romiRevenueSlider = document.getElementById('romi-revenue-slider');
+    const romiRevenueNumber = document.getElementById('romi-revenue-number');
+    const romiCostSlider = document.getElementById('romi-cost-slider');
+    const romiCostNumber = document.getElementById('romi-cost-number');
+    const romiResult = document.getElementById('romi-result');
+    const romiInterpretation = document.getElementById('romi-interpretation');
+    const gaugeNeedle = document.querySelector('.gauge-needle');
+
+    // --- LTV & CAC Calculator ---
+    const ltvInputs = document.querySelectorAll('.ltv-input');
+    const ltvResult = document.getElementById('ltv-result');
+    const cacResult = document.getElementById('cac-result');
+    const ltvInterpretation = document.getElementById('ltv-interpretation');
+    const ltvBar = document.getElementById('ltv-bar');
+    const cacBar = document.getElementById('cac-bar');
+
+    // --- Conversion Calculator ---
+    const convInputs = document.querySelectorAll('.conv-input');
+    const convResult = document.getElementById('conv-result');
+    const convInterpretation = document.getElementById('conv-interpretation');
+    const convCircle = document.getElementById('conv-circle');
+
+    function calculate() {
+        // ROMI Calculation
+        const revenue = parseFloat(romiRevenueNumber.value);
+        const cost = parseFloat(romiCostNumber.value);
+        const romi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
+        romiResult.textContent = `${formatNumber(romi)}%`;
+        
+        let romiText = "Маркетинг работает в ноль.";
+        if (romi > 0) romiText = `Отличный результат! Каждый вложенный рубль приносит ${formatNumber(revenue / cost)} рубля прибыли.`;
+        if (romi < 0) romiText = "Маркетинг не окупается, необходимо пересмотреть стратегию.";
+        romiInterpretation.textContent = romiText;
+
+        const romiRotation = Math.max(-90, Math.min(90, (romi / 1000) * 180 - 90));
+        gaugeNeedle.style.setProperty('--romi-rotation', `${romiRotation}deg`);
+
+        // LTV & CAC Calculation
+        const avgCheck = parseFloat(document.getElementById('ltv-avg-check-number').value);
+        const repeats = parseFloat(document.getElementById('ltv-repeats-number').value);
+        const lifespan = parseFloat(document.getElementById('ltv-lifespan-number').value);
+        const cac = parseFloat(document.getElementById('ltv-cac-number').value);
+        const ltv = avgCheck * repeats * lifespan;
+        
+        ltvResult.textContent = `${formatNumber(ltv)} ₽`;
+        cacResult.textContent = `${formatNumber(cac)} ₽`;
+        
+        const ratio = cac > 0 ? ltv / cac : 0;
+        let ltvText = "Соотношение LTV/CAC показывает жизнеспособность модели.";
+        if (ratio >= 3) ltvText = "Бизнес-модель здорова! LTV значительно превышает CAC.";
+        if (ratio < 3 && ratio > 1) ltvText = "Модель на грани окупаемости. Есть точки для роста.";
+        if (ratio <= 1 && ratio > 0) ltvText = "Риск кассового разрыва. Привлечение клиентов обходится слишком дорого.";
+        ltvInterpretation.textContent = ltvText;
+
+        const maxVal = Math.max(ltv, cac, 1);
+        ltvBar.style.height = `${(ltv / maxVal) * 100}%`;
+        cacBar.style.height = `${(cac / maxVal) * 100}%`;
+
+        // Conversion Calculation
+        const visitors = parseFloat(document.getElementById('conv-visitors-number').value);
+        const actions = parseFloat(document.getElementById('conv-actions-number').value);
+        const conversion = visitors > 0 ? (actions / visitors) * 100 : 0;
+        convResult.textContent = `${conversion.toFixed(1)}%`;
+        convCircle.style.setProperty('--conv-percent', conversion.toFixed(1));
+        
+        convInterpretation.textContent = `Каждый ${Math.round(100/conversion) || '∞'}-й посетитель совершает целевое действие.`;
+    }
+
+    // Link sliders and number inputs
+    [romiRevenueSlider, romiCostSlider, ...ltvInputs, ...convInputs].forEach(input => {
+        if(input.type === 'range') {
+            const numberInput = document.getElementById(input.id.replace('-slider', '-number'));
+            input.addEventListener('input', () => numberInput.value = input.value);
+        } else if (input.type === 'number') {
+             const sliderInput = document.getElementById(input.id.replace('-number', '-slider'));
+             input.addEventListener('input', () => sliderInput.value = input.value);
+        }
+    });
+
+    // Add event listeners to all inputs
+    [...document.querySelectorAll('.calculator-grid input')].forEach(input => {
+        input.addEventListener('input', calculate);
+    });
+
+    calculate(); // Initial calculation
+}
+</script>
+</body> 
+</html>
